@@ -2,6 +2,7 @@
 
 import {
   ChangeEvent,
+  FormEvent,
   useRef,
   useState,
 } from "react";
@@ -15,6 +16,8 @@ import {
 
 import type { Product } from "@/features/products/data/products";
 
+import { useCart } from "@/features/cart/context/CartContext";
+
 interface CustomizationFormProps {
   product: Product;
 }
@@ -22,7 +25,10 @@ interface CustomizationFormProps {
 export default function CustomizationForm({
   product,
 }: CustomizationFormProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const { addToCart } = useCart();
 
   const [fileName, setFileName] =
     useState("");
@@ -33,17 +39,31 @@ export default function CustomizationForm({
   const [quantity, setQuantity] =
     useState(1);
 
+  const [error, setError] =
+    useState("");
+
+  /* --------------------------------
+     Handle image upload
+  -------------------------------- */
+
   const handleFileChange = (
     event: ChangeEvent<HTMLInputElement>
   ) => {
-    const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
 
     if (!file) {
       return;
     }
 
     setFileName(file.name);
+
+    setError("");
   };
+
+  /* --------------------------------
+     Remove uploaded image
+  -------------------------------- */
 
   const removeFile = () => {
     setFileName("");
@@ -53,12 +73,78 @@ export default function CustomizationForm({
     }
   };
 
+  /* --------------------------------
+     Handle quantity
+  -------------------------------- */
+
+  const decreaseQuantity = () => {
+    setQuantity((current) =>
+      Math.max(1, current - 1)
+    );
+  };
+
+  const increaseQuantity = () => {
+    setQuantity((current) =>
+      current + 1
+    );
+  };
+
+  /* --------------------------------
+     Add product to cart
+  -------------------------------- */
+
+  const handleAddToCart = (
+    event: FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    setError("");
+
+    /*
+     * We don't require personalization
+     * or an image because different
+     * KimCustoms products may have
+     * different customization requirements.
+     */
+
+    addToCart({
+      product,
+      quantity,
+      personalization:
+        message.trim(),
+      imageName:
+        fileName || undefined,
+    });
+
+    /*
+     * Reset the form after adding.
+     *
+     * The customer remains on the
+     * product page and can continue
+     * shopping.
+     */
+
+    setMessage("");
+
+    setFileName("");
+
+    setQuantity(1);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
-    <form className="kc-customization-form">
+    <form
+      className="kc-customization-form"
+      onSubmit={handleAddToCart}
+    >
+      {/* =================================
+          PERSONALIZATION
+      ================================= */}
 
-      {/* Personalization */}
       <div className="kc-form-section">
-
         <div className="kc-form-heading">
           <span className="kc-form-step">
             1
@@ -88,7 +174,9 @@ export default function CustomizationForm({
           name="personalization"
           value={message}
           onChange={(event) =>
-            setMessage(event.target.value)
+            setMessage(
+              event.target.value
+            )
           }
           placeholder={
             "e.g. Add the name 'Mum' and the date 12.08.2026..."
@@ -97,15 +185,18 @@ export default function CustomizationForm({
         />
 
         <span className="kc-form-hint">
-          Include names, dates, handwriting,
-          coordinates or any other details
-          relevant to your design.
+          Include names, dates,
+          handwriting, coordinates or
+          any other details relevant to
+          your design.
         </span>
       </div>
 
-      {/* Upload */}
-      <div className="kc-form-section">
+      {/* =================================
+          IMAGE UPLOAD
+      ================================= */}
 
+      <div className="kc-form-section">
         <div className="kc-form-heading">
           <span className="kc-form-step">
             2
@@ -117,8 +208,8 @@ export default function CustomizationForm({
             </h2>
 
             <p>
-              Use a clear, high-quality image
-              where possible.
+              Use a clear, high-quality
+              image where possible.
             </p>
           </div>
         </div>
@@ -155,7 +246,6 @@ export default function CustomizationForm({
           </button>
         ) : (
           <div className="kc-uploaded-file">
-
             <div>
               <FiCheck size={18} />
 
@@ -175,9 +265,11 @@ export default function CustomizationForm({
         )}
       </div>
 
-      {/* Quantity */}
-      <div className="kc-form-section">
+      {/* =================================
+          QUANTITY
+      ================================= */}
 
+      <div className="kc-form-section">
         <div className="kc-form-heading">
           <span className="kc-form-step">
             3
@@ -194,42 +286,57 @@ export default function CustomizationForm({
           </div>
         </div>
 
-        <div className="kc-quantity">
-
+        <div
+          className="kc-quantity"
+          aria-label="Product quantity"
+        >
           <button
             type="button"
-            onClick={() =>
-              setQuantity(
-                Math.max(1, quantity - 1)
-              )
+            onClick={
+              decreaseQuantity
             }
             aria-label="Decrease quantity"
           >
             −
           </button>
 
-          <span>
+          <span
+            aria-live="polite"
+          >
             {quantity}
           </span>
 
           <button
             type="button"
-            onClick={() =>
-              setQuantity(quantity + 1)
+            onClick={
+              increaseQuantity
             }
             aria-label="Increase quantity"
           >
             +
           </button>
-
         </div>
       </div>
 
-      {/* Add to cart */}
+      {/* =================================
+          ERROR
+      ================================= */}
+
+      {error && (
+        <div
+          className="kc-form-error"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
+
+      {/* =================================
+          ADD TO CART
+      ================================= */}
+
       <div className="kc-add-to-cart-area">
-
         <div className="kc-total">
-
           <span>
             Total
           </span>
@@ -237,23 +344,17 @@ export default function CustomizationForm({
           <strong>
             KSh{" "}
             {(
-              product.price * quantity
-            ).toLocaleString("en-KE")}
+              product.price *
+              quantity
+            ).toLocaleString(
+              "en-KE"
+            )}
           </strong>
-
         </div>
 
         <button
-          type="button"
+          type="submit"
           className="kc-btn kc-btn-rose kc-add-to-cart"
-          onClick={() => {
-            console.log({
-              product,
-              quantity,
-              personalization: message,
-              fileName,
-            });
-          }}
         >
           Add to cart
         </button>
@@ -261,19 +362,18 @@ export default function CustomizationForm({
         <button
           type="button"
           className="kc-wishlist"
-          aria-label="Add to wishlist"
+          aria-label={`Add ${product.name} to wishlist`}
         >
           <FiHeart size={18} />
         </button>
-
       </div>
 
       <p className="kc-customization-note">
-        Your uploaded photo and personalization
-        details will be securely attached to
-        your order during checkout.
+        Your uploaded photo and
+        personalization details will be
+        securely attached to your order
+        during checkout.
       </p>
-
     </form>
   );
 }
