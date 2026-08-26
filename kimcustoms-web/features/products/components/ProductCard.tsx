@@ -26,10 +26,17 @@ export default function ProductCard({
           <img
             src={product.image}
             alt={product.name}
+            loading="lazy"
           />
         ) : (
-          <div className="kc-product-placeholder">
-            <FiImage size={34} strokeWidth={1.3} />
+          <div
+            className="kc-product-placeholder"
+            aria-label={`${product.name} image unavailable`}
+          >
+            <FiImage
+              size={34}
+              strokeWidth={1.3}
+            />
 
             <span>Product image</span>
           </div>
@@ -41,7 +48,10 @@ export default function ProductCard({
           </span>
         )}
 
-        <span className="kc-product-arrow">
+        <span
+          className="kc-product-arrow"
+          aria-hidden="true"
+        >
           <FiArrowUpRight size={18} />
         </span>
       </Link>
@@ -63,7 +73,8 @@ export default function ProductCard({
 
         <div className="kc-product-footer">
           <strong>
-            KSh {product.price.toLocaleString("en-KE")}
+            KSh{" "}
+            {product.price.toLocaleString("en-KE")}
           </strong>
 
           {product.customizable && (
