@@ -1,6 +1,10 @@
 import Link from "next/link";
+import {
+  FiArrowUpRight,
+  FiImage,
+} from "react-icons/fi";
+
 import type { Product } from "../data/products";
-import { FiArrowUpRight, FiImage } from "react-icons/fi";
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +19,13 @@ const craftLabels = {
 export default function ProductCard({
   product,
 }: ProductCardProps) {
+  const image =
+    product.primaryImage ||
+    product.images.find(
+      (item) => item.is_primary
+    )?.image ||
+    product.images[0]?.image;
+
   return (
     <article className="kc-product-card">
       <Link
@@ -22,23 +33,26 @@ export default function ProductCard({
         className="kc-product-image"
         aria-label={`View ${product.name}`}
       >
-        {product.image ? (
+        {image ? (
           <img
-            src={product.image}
-            alt={product.name}
-            loading="lazy"
+            src={image}
+            alt={
+              product.images.find(
+                (item) => item.image === image
+              )?.alt_text ||
+              product.name
+            }
           />
         ) : (
-          <div
-            className="kc-product-placeholder"
-            aria-label={`${product.name} image unavailable`}
-          >
+          <div className="kc-product-placeholder">
             <FiImage
               size={34}
               strokeWidth={1.3}
             />
 
-            <span>Product image</span>
+            <span>
+              Product image
+            </span>
           </div>
         )}
 
@@ -48,10 +62,7 @@ export default function ProductCard({
           </span>
         )}
 
-        <span
-          className="kc-product-arrow"
-          aria-hidden="true"
-        >
+        <span className="kc-product-arrow">
           <FiArrowUpRight size={18} />
         </span>
       </Link>
@@ -74,7 +85,9 @@ export default function ProductCard({
         <div className="kc-product-footer">
           <strong>
             KSh{" "}
-            {product.price.toLocaleString("en-KE")}
+            {product.price.toLocaleString(
+              "en-KE"
+            )}
           </strong>
 
           {product.customizable && (

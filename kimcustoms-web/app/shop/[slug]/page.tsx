@@ -1,130 +1,165 @@
-import { notFound } from "next/navigation";
+"use client";
+
 import Link from "next/link";
-import {
-  FiArrowLeft,
-  FiCheck,
-  FiHeart,
-  FiImage,
-  FiUpload,
-} from "react-icons/fi";
+import { useParams } from "next/navigation";
+import { FiArrowLeft } from "react-icons/fi";
 
-import {
-  products,
-  type Product,
-} from "@/features/products/data/products";
-
+import { useProduct } from "@/features/products/hooks/useProduct";
+import { mapApiProductToProduct } from "@/features/products/data/productAdapter";
 import CustomizationForm from "./CustomizationForm";
 
-interface ProductPageProps {
-  params: Promise<{
-    slug: string;
-  }>;
-}
+export default function ProductPage() {
+  const params = useParams();
 
-function getProduct(slug: string): Product | undefined {
-  return products.find(
-    (product) => product.slug === slug
-  );
-}
+  const slug = String(params.slug);
 
-export default async function ProductPage({
-  params,
-}: ProductPageProps) {
-  const { slug } = await params;
+  const {
+    data: apiProduct,
+    isLoading,
+    isError,
+  } = useProduct(slug);
 
-  const product = getProduct(slug);
-
-  if (!product) {
-    notFound();
+  if (isLoading) {
+    return (
+      <main className="kc-product-page">
+        <div className="kc-container">
+          <div className="kc-product-loading">
+            Loading product...
+          </div>
+        </div>
+      </main>
+    );
   }
+
+  if (isError || !apiProduct) {
+    return (
+      <main className="kc-product-page">
+        <div className="kc-container">
+          <div className="kc-product-error">
+            <h1>
+              Product not found
+            </h1>
+
+            <p>
+              We couldn't find the keepsake
+              you're looking for.
+            </p>
+
+            <Link
+              href="/#shop"
+              className="kc-btn kc-btn-outline"
+            >
+              <FiArrowLeft size={17} />
+              Back to collection
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const product =
+    mapApiProductToProduct(apiProduct);
+
+  const images = apiProduct.images || [];
 
   return (
     <main className="kc-product-page">
+
+      {/* Back link */}
       <div className="kc-container">
+        <Link
+          href="/#shop"
+          className="kc-product-back"
+        >
+          <FiArrowLeft size={17} />
+          Back to collection
+        </Link>
+      </div>
 
-        {/* Breadcrumb */}
-        <div className="kc-product-breadcrumb">
-          <Link href="/#shop">
-            <FiArrowLeft size={15} />
-            Back to keepsakes
-          </Link>
-        </div>
+      <section className="kc-section">
+        <div className="kc-container">
 
-        <div className="kc-product-layout">
+          <div className="kc-product-layout">
 
-          {/* Product visual */}
-          <div className="kc-product-detail-image">
+            {/* Product images */}
+            <div className="kc-product-gallery">
 
-            <div className="kc-product-detail-placeholder">
-              <FiImage
-                size={48}
-                strokeWidth={1.2}
+              <div className="kc-product-main-image">
+
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                  />
+                ) : (
+                  <div className="kc-product-placeholder">
+                    Product image
+                  </div>
+                )}
+
+                {product.badge && (
+                  <span className="kc-product-badge">
+                    {product.badge}
+                  </span>
+                )}
+              </div>
+
+              {images.length > 1 && (
+                <div className="kc-product-thumbnails">
+                  {images.map((image) => (
+                    <div
+                      key={image.id}
+                      className="kc-product-thumbnail"
+                    >
+                      <img
+                        src={image.image}
+                        alt={
+                          image.alt_text ||
+                          product.name
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Product information */}
+            <div className="kc-product-info">
+
+              <span className="kc-product-craft">
+                {product.craft === "embroidery"
+                  ? "Embroidery"
+                  : product.craft ===
+                    "wood-leather"
+                  ? "Wood & Leather"
+                  : "Metal Jewelry"}
+              </span>
+
+              <h1>
+                {product.name}
+              </h1>
+
+              <div className="kc-product-price">
+                KSh{" "}
+                {product.price.toLocaleString(
+                  "en-KE"
+                )}
+              </div>
+
+              <p className="kc-product-description">
+                {product.description}
+              </p>
+
+              <CustomizationForm
+                product={product}
               />
 
-              <span>Product image</span>
             </div>
-
-            {product.badge && (
-              <span className="kc-product-detail-badge">
-                {product.badge}
-              </span>
-            )}
-          </div>
-
-          {/* Product information */}
-          <div className="kc-product-detail-info">
-
-            <span className="kc-product-craft">
-              {getCraftLabel(product.craft)}
-            </span>
-
-            <h1>
-              {product.name}
-            </h1>
-
-            <div className="kc-product-detail-price">
-              KSh{" "}
-              {product.price.toLocaleString("en-KE")}
-            </div>
-
-            <p className="kc-product-detail-description">
-              {product.description}
-            </p>
-
-            <div className="kc-product-benefits">
-              <div>
-                <FiCheck size={16} />
-                Made to order
-              </div>
-
-              <div>
-                <FiCheck size={16} />
-                Personalised for you
-              </div>
-
-              <div>
-                <FiCheck size={16} />
-                Delivery available across Kenya
-              </div>
-            </div>
-
-            <CustomizationForm product={product} />
-
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
-}
-
-function getCraftLabel(
-  craft: Product["craft"]
-) {
-  const labels = {
-    embroidery: "Embroidery",
-    "wood-leather": "Wood & Leather",
-    "metal-jewelry": "Metal Jewelry",
-  };
-
-  return labels[craft];
 }

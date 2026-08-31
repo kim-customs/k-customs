@@ -1,18 +1,14 @@
 "use client";
 
-import {
-  useQuery,
-} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import {
-  getProducts,
-} from "@/lib/api/products";
+import { getProducts } from "@/lib/api/products";
 
-export function useProducts() {
+export function useProducts(craft?: string) {
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", craft ?? "all"],
 
-    queryFn: getProducts,
+    queryFn: () => getProducts(craft),
 
     staleTime: 60 * 1000,
   });

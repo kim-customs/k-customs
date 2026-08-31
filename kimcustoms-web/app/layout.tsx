@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "@/styles/globals.css";
 
 import { CartProvider } from "@/features/cart/context/CartContext";
+import CartUI from "@/features/cart/components/CartUI";
 import QueryProvider from "@/providers/QueryProvider";
 
 export const metadata: Metadata = {
@@ -25,6 +26,8 @@ export default function RootLayout({
         <QueryProvider>
           <CartProvider>
             {children}
+
+            <CartUI />
           </CartProvider>
         </QueryProvider>
       </body>

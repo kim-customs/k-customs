@@ -21,10 +21,18 @@ export function mapApiProductToProduct(
 
     badge: product.badge || undefined,
 
-    occasions: product.occasions as Product["occasions"],
+    occasions:
+      product.occasions as Product["occasions"],
 
     customizable: product.customizable,
 
-    image: product.primary_image || undefined,
+    stockQuantity: product.stock_quantity,
+
+    isActive: product.is_active,
+
+    images: product.images,
+
+    primaryImage:
+      product.primary_image || undefined,
   };
 }

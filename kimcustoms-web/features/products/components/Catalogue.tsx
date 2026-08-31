@@ -1,66 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import CraftFilters from "./CraftFilters";
 import ProductGrid from "./ProductGrid";
 
-import type { Product, Craft } from "../data/products";
-
-import {
-  getProducts,
-} from "@/lib/api/products";
-
-import {
-  mapApiProductToProduct,
-} from "../data/productAdapter";
-
+import type { Craft } from "../data/products";
+import { mapApiProductToProduct } from "../data/productAdapter";
+import { useProducts } from "../hooks/useProducts";
 
 export default function Catalogue() {
-  const [products, setProducts] = useState<Product[]>([]);
-
   const [activeCraft, setActiveCraft] =
     useState<Craft | "all">("all");
 
-  const [loading, setLoading] =
-    useState(true);
+  const {
+    data: apiProducts = [],
+    isLoading,
+    isError,
+  } = useProducts();
 
-  const [error, setError] =
-    useState<string | null>(null);
-
-
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        setLoading(true);
-
-        setError(null);
-
-        const data = await getProducts();
-
-        const mappedProducts =
-          data.map(mapApiProductToProduct);
-
-        setProducts(mappedProducts);
-
-      } catch (err) {
-        console.error(
-          "Failed to load products:",
-          err
-        );
-
-        setError(
-          "We couldn't load the collection. Please try again."
-        );
-
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadProducts();
-  }, []);
-
+  // Convert API products into the frontend Product format.
+  const products = useMemo(
+    () =>
+      apiProducts.map(mapApiProductToProduct),
+    [apiProducts]
+  );
 
   const filteredProducts = useMemo(() => {
     if (activeCraft === "all") {
@@ -73,7 +37,6 @@ export default function Catalogue() {
     );
   }, [products, activeCraft]);
 
-
   return (
     <section
       id="shop"
@@ -81,9 +44,8 @@ export default function Catalogue() {
       aria-labelledby="catalogue-heading"
     >
       <div className="kc-container">
-
+        {/* Section heading */}
         <div className="kc-section-head">
-
           <span className="kc-eyebrow">
             The keepsake collection
           </span>
@@ -100,46 +62,37 @@ export default function Catalogue() {
             that feels right. Every order is made
             around your photo, words or story.
           </p>
-
         </div>
 
-
+        {/* Craft filters */}
         <CraftFilters
           activeCraft={activeCraft}
           onChange={setActiveCraft}
         />
 
-
-        {loading && (
-          <div className="kc-catalogue-status">
-            <p>
-              Loading our keepsakes...
-            </p>
+        {/* Loading state */}
+        {isLoading && (
+          <div
+            className="kc-catalogue-count"
+            aria-live="polite"
+          >
+            Loading keepsakes...
           </div>
         )}
 
-
-        {!loading && error && (
+        {/* Error state */}
+        {isError && (
           <div
-            className="kc-catalogue-status kc-catalogue-error"
+            className="kc-catalogue-count"
             role="alert"
           >
-            <p>{error}</p>
-
-            <button
-              type="button"
-              className="kc-btn kc-btn-outline"
-              onClick={() =>
-                window.location.reload()
-              }
-            >
-              Try again
-            </button>
+            Unable to load the catalogue.
+            Please try again.
           </div>
         )}
 
-
-        {!loading && !error && (
+        {/* Catalogue */}
+        {!isLoading && !isError && (
           <>
             <div className="kc-catalogue-count">
               Showing{" "}
@@ -151,13 +104,32 @@ export default function Catalogue() {
                 : "keepsakes"}
             </div>
 
-            <ProductGrid
-              products={filteredProducts}
-            />
+            {filteredProducts.length > 0 ? (
+              <ProductGrid
+                products={filteredProducts}
+              />
+            ) : (
+              <div className="kc-catalogue-empty">
+                <p>
+                  No keepsakes found in this
+                  category.
+                </p>
+
+                <button
+                  type="button"
+                  className="kc-btn kc-btn-outline"
+                  onClick={() =>
+                    setActiveCraft("all")
+                  }
+                >
+                  View all keepsakes
+                </button>
+              </div>
+            )}
           </>
         )}
-
       </div>
     </section>
   );
 }
+
