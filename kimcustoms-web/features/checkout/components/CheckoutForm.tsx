@@ -1,11 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+
 import Link from "next/link";
 
 import { FiArrowRight, FiCheck } from "react-icons/fi";
 
 import { useCart } from "@/features/cart/context/CartContext";
+
+import { createOrder } from "@/features/orders/api/createOrder";
 
 export default function CheckoutForm() {
   const {
@@ -14,9 +17,8 @@ export default function CheckoutForm() {
     subtotal,
   } = useCart();
 
-  
   const [paymentMethod, setPaymentMethod] =
-  useState<"mpesa" | "card" | "cash">("mpesa");
+    useState<"mpesa" | "card" | "cash">("mpesa");
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -40,7 +42,9 @@ export default function CheckoutForm() {
 
   const handleChange = (
     event: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      HTMLInputElement |
+      HTMLTextAreaElement |
+      HTMLSelectElement
     >
   ) => {
     const { name, value } = event.target;
@@ -53,7 +57,7 @@ export default function CheckoutForm() {
     setFormError("");
   };
 
-  const handleSubmit = (
+  const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
@@ -70,29 +74,35 @@ export default function CheckoutForm() {
 
     setSubmitting(true);
 
-    /*
-     * TEMPORARY CHECKOUT FLOW
-     *
-     * This will eventually become:
-     *
-     * Next.js
-     *    ↓
-     * Django API
-     *    ↓
-     * Create Order
-     *    ↓
-     * Daraja STK Push
-     *    ↓
-     * M-Pesa confirmation
-     *
-     * For now we're only validating
-     * and presenting the checkout flow.
-     */
+    try {
+      await createOrder({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        email: form.email,
 
-    setTimeout(() => {
-      setSubmitting(false);
+        county: form.county,
+        town: form.town,
+        address: form.address,
+        notes: form.notes,
+
+        paymentMethod,
+        items,
+      });
+
       setSuccess(true);
-    }, 800);
+    } catch (error) {
+      console.error(
+        "Checkout error:",
+        error
+      );
+
+      setFormError(
+        "We couldn't create your order. Please check your details and try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (success) {
@@ -401,10 +411,11 @@ export default function CheckoutForm() {
             {/* M-PESA */}
 
             <label
-              className={`kc-payment-option ${paymentMethod === "mpesa"
+              className={`kc-payment-option ${
+                paymentMethod === "mpesa"
                   ? "active"
                   : ""
-                }`}
+              }`}
             >
               <input
                 type="radio"
@@ -440,14 +451,14 @@ export default function CheckoutForm() {
               </span>
             </label>
 
-
             {/* CARD */}
 
             <label
-              className={`kc-payment-option ${paymentMethod === "card"
+              className={`kc-payment-option ${
+                paymentMethod === "card"
                   ? "active"
                   : ""
-                }`}
+              }`}
             >
               <input
                 type="radio"
@@ -498,14 +509,14 @@ export default function CheckoutForm() {
               </span>
             </label>
 
-
             {/* CASH ON DELIVERY */}
 
             <label
-              className={`kc-payment-option ${paymentMethod === "cash"
+              className={`kc-payment-option ${
+                paymentMethod === "cash"
                   ? "active"
                   : ""
-                }`}
+              }`}
             >
               <input
                 type="radio"

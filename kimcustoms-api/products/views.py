@@ -26,7 +26,6 @@ class ProductListView(generics.ListAPIView):
 class ProductDetailView(generics.RetrieveAPIView):
 
     serializer_class = ProductSerializer
-
     lookup_field = "slug"
 
     def get_queryset(self):
